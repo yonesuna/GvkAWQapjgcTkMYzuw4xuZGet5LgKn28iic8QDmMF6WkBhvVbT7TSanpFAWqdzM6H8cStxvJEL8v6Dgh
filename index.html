@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>まごころゴルフ in 別府決戦</title>
+  <style>
+    :root {
+      --bg: #eaf4ea;
+      --panel: #f7fbf4;
+      --ink: #142418;
+      --muted: #526b59;
+      --line: #b8d0bd;
+      --green: #287245;
+      --green-dark: #174c31;
+      --green-soft: #dceee0;
+      --green-pale: #eef7ed;
+      --gold: #7a8f2a;
+      --red: #b84232;
+      --team-a: #b84232;
+      --team-b: #2b5da8;
+      --blue: #2b736c;
+      --shadow: 0 12px 28px rgba(16, 58, 34, 0.14);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", Georgia, serif;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(40, 114, 69, 0.2), transparent 30%),
+        radial-gradient(circle at 86% 18%, rgba(43, 115, 108, 0.16), transparent 28%),
+        linear-gradient(135deg, #f3faf0 0%, #dfeede 52%, #cfe6d5 100%);
+      min-height: 100vh;
+    }
+
+    button, input, select { font: inherit; }
+
+    .app {
+      width: min(1220px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 22px 0 40px;
+    }
+
+    header {
+      display: block;
+      padding: 18px 0 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(26px, 5vw, 52px);
+      letter-spacing: 0;
+      line-height: 1.05;
+    }
+
+    .field input, .field select {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: rgba(247, 251, 244, 0.94);
+      color: var(--ink);
+      min-width: 0;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 18px;
+    }
+
+    .tab-button {
+      border: 1px solid transparent;
+      border-bottom: 0;
+      border-radius: 8px 8px 0 0;
+      padding: 11px 18px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .tab-button.active {
+      background: var(--panel);
+      border-color: var(--line);
+      color: var(--ink);
+      box-shadow: var(--shadow);
+    }
+
+    .panel {
+      display: none;
+      background: rgba(247, 251, 244, 0.92);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .panel.active { display: block; }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .button {
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      background: var(--green);
+      color: white;
+      cursor: pointer;
+      min-height: 42px;
+    }
+
+    .button.secondary {
+      background: var(--green-soft);
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .button:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+
+    .status {
+      color: var(--muted);
+      min-height: 22px;
+      font-size: 14px;
+    }
+
+    .status.error { color: var(--red); }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .team-total {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: linear-gradient(135deg, rgba(40, 114, 69, 0.16), rgba(43, 115, 108, 0.12));
+    }
+
+    .team-total strong {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .team-total span {
+      font-size: clamp(30px, 5vw, 46px);
+      font-weight: 700;
+    }
+
+    .team-total.team-a {
+      border-left: 8px solid var(--team-a);
+      background: linear-gradient(135deg, rgba(184, 66, 50, 0.28), rgba(184, 66, 50, 0.1));
+    }
+
+    .team-total.team-b {
+      border-left: 8px solid var(--team-b);
+      background: linear-gradient(135deg, rgba(43, 93, 168, 0.28), rgba(43, 93, 168, 0.1));
+    }
+    .team-total.team-a strong, .team-total.team-a span { color: var(--team-a); }
+    .team-total.team-b strong, .team-total.team-b span { color: var(--team-b); }
+    .team-total.winning {
+      transform: scale(1.04);
+      position: relative;
+      z-index: 1;
+    }
+    .team-total.team-a.winning { box-shadow: 0 0 0 4px var(--team-a), 0 10px 24px rgba(184, 66, 50, 0.4); }
+    .team-total.team-b.winning { box-shadow: 0 0 0 4px var(--team-b), 0 10px 24px rgba(43, 93, 168, 0.4); }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 550px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    th:first-child, td:first-child,
+    th:nth-child(2), td:nth-child(2) { text-align: left; }
+
+    th {
+      background: #dbeadd;
+      color: #1f3d29;
+      font-size: 13px;
+    }
+
+    tbody tr:last-child td { border-bottom: 0; }
+
+    .team-a td {
+      background: rgba(184, 66, 50, 0.22);
+      border-bottom-color: rgba(184, 66, 50, 0.35);
+    }
+
+    .team-b td {
+      background: rgba(43, 93, 168, 0.2);
+      border-bottom-color: rgba(43, 93, 168, 0.35);
+    }
+
+    .team-a td:nth-child(2) {
+      color: var(--team-a);
+      font-weight: 700;
+    }
+
+    .team-b td:nth-child(2) {
+      color: var(--team-b);
+      font-weight: 700;
+    }
+
+    .rank-1.team-a td { background: rgba(184, 66, 50, 0.34); }
+    .rank-1.team-b td { background: rgba(43, 93, 168, 0.32); }
+
+    .entry-layout {
+      display: grid;
+      gap: 16px;
+    }
+
+    .entry-card {
+      display: grid;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .member-field {
+      max-width: 320px;
+    }
+
+    .stepper {
+      display: grid;
+      grid-template-columns: 42px 1fr 42px;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .stepper button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--green-soft);
+      min-height: 42px;
+      cursor: pointer;
+    }
+
+    .stepper input { text-align: center; }
+
+    .holes {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(9, minmax(0, auto));
+      grid-auto-flow: column;
+      gap: 10px;
+    }
+
+    .hole {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(238, 247, 237, 0.72);
+      padding: 10px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .hole-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-weight: 700;
+    }
+
+    .near-pin {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .error-box {
+      display: none;
+      border: 1px solid rgba(184, 66, 50, 0.45);
+      color: var(--red);
+      background: rgba(184, 66, 50, 0.08);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .error-box.visible { display: block; }
+
+    @media (max-width: 860px) {
+      header, .fields { grid-template-columns: 1fr; }
+      header { display: grid; align-items: start; }
+      .team-total { padding: 12px; }
+      .team-total span { font-size: clamp(26px, 8vw, 38px); }
+      .holes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .panel { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>まごころゴルフ in 別府決戦</h1>
+    </header>
+
+    <nav class="tabs" aria-label="表示切替">
+      <button class="tab-button active" type="button" data-tab="ranking">順位表</button>
+      <button class="tab-button" type="button" data-tab="entry">ポイント入力</button>
+      <button class="tab-button" type="button" data-tab="admin">管理者</button>
+    </nav>
+
+    <section class="panel active" id="rankingPanel">
+      <div class="toolbar">
+        <div class="status" id="rankingStatus"></div>
+        <button class="button" id="reloadButton" type="button">再読み込み</button>
+      </div>
+      <div class="team-grid" id="teamTotals"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>順位</th>
+              <th>メンバー</th>
+              <th>合計</th>
+              <th>進行</th>
+              <th>オリン<br>ピック</th>
+              <th>ニア<br>ピン</th>
+              <th>ミッ<br>ション</th>
+              <th>グロス<br>順位</th>
+              <th>ネット<br>順位</th>
+            </tr>
+          </thead>
+          <tbody id="rankingBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" id="entryPanel">
+      <div class="entry-layout">
+        <section class="entry-card">
+          <div class="error-box" id="validationErrors"></div>
+          <label class="field member-field">
+            <select id="memberSelect"></select>
+          </label>
+          <div class="holes" id="holes"></div>
+          <div class="fields">
+            <label class="field">グロス順位
+              <select id="grossRank"></select>
+            </label>
+            <label class="field">ネット順位
+              <select id="netRank"></select>
+            </label>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="panel" id="adminPanel">
+      <div class="toolbar">
+        <div class="status" id="adminStatus"></div>
+        <button class="button" id="clearAllButton" type="button">すべてクリア</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const MEMBERS = [
+      { name: 'ヤマ', team: 'A' },
+      { name: 'エモ', team: 'B' },
+      { name: 'ナガ', team: 'A' },
+      { name: 'タニ', team: 'A' },
+      { name: '畑中', team: 'A' },
+      { name: '坂本', team: 'B' },
+      { name: '米井', team: 'B' },
+      { name: '柴田', team: 'B' }
+    ];
+
+    const OLYMPIC_OPTIONS = [
+      { label: '', value: '', points: 0 },
+      { label: 'なし', value: 'none', points: 0 },
+      { label: '鉄', value: 'iron', points: 1 },
+      { label: '銅', value: 'bronze', points: 2 },
+      { label: '銀', value: 'silver', points: 3 },
+      { label: '金', value: 'gold', points: 4 },
+      { label: 'ダイヤ', value: 'diamond', points: 5 }
+    ];
+
+    const RANK_OPTIONS = [
+      { label: '1位', value: 1 },
+      { label: '2位', value: 2 },
+      { label: '3位', value: 3 },
+      { label: '圏外', value: 4 }
+    ];
+
+    const TEAM_LABELS = { A: 'Aチーム', B: 'Bチーム' };
+    const API_URL = 'https://n6223mtla2.execute-api.ap-northeast-1.amazonaws.com/points';
+    const SELECTED_MEMBER_STORAGE_KEY = 'golfSelectedMember';
+    let state = createInitialState();
+    let selectedMember = getSavedSelectedMember();
+    let saveQueue = Promise.resolve();
+
+    const elements = {
+      rankingStatus: document.getElementById('rankingStatus'),
+      adminStatus: document.getElementById('adminStatus'),
+      teamTotals: document.getElementById('teamTotals'),
+      rankingBody: document.getElementById('rankingBody'),
+      memberSelect: document.getElementById('memberSelect'),
+      holes: document.getElementById('holes'),
+      grossRank: document.getElementById('grossRank'),
+      netRank: document.getElementById('netRank'),
+      validationErrors: document.getElementById('validationErrors'),
+      reloadButton: document.getElementById('reloadButton'),
+      clearAllButton: document.getElementById('clearAllButton')
+    };
+
+    buildMemberSelect();
+    buildRankOptions();
+    buildHoles();
+    bindEvents();
+    loadPoints();
+
+    function createInitialState() {
+      return {
+        version: 1,
+        updatedAt: null,
+        members: Object.fromEntries(MEMBERS.map(member => [member.name, createMemberData()]))
+      };
+    }
+
+    function createMemberData() {
+      return {
+        grossRank: 4,
+        netRank: 4,
+        holes: Array.from({ length: 18 }, () => ({ olympic: '', nearPin: false, mission: 0 }))
+      };
+    }
+
+    function normalizeState(input) {
+      const next = createInitialState();
+      if (!input || typeof input !== 'object') return next;
+      next.updatedAt = input.updatedAt || null;
+      for (const member of MEMBERS) {
+        const saved = input.members?.[member.name] || {};
+        next.members[member.name].grossRank = clampNumber(saved.grossRank, 1, 4, next.members[member.name].grossRank);
+        next.members[member.name].netRank = clampNumber(saved.netRank, 1, 4, next.members[member.name].netRank);
+        next.members[member.name].holes = Array.from({ length: 18 }, (_, index) => {
+          const hole = saved.holes?.[index] || {};
+          return {
+            olympic: OLYMPIC_OPTIONS.some(option => option.value === hole.olympic) ? hole.olympic : '',
+            nearPin: Boolean(hole.nearPin),
+            mission: clampNumber(hole.mission, 0, 99, 0)
+          };
+        });
+      }
+      return next;
+    }
+
+    function bindEvents() {
+      document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', () => switchTab(button.dataset.tab));
+      });
+      elements.reloadButton.addEventListener('click', loadPoints);
+      elements.clearAllButton.addEventListener('click', clearAllData);
+      elements.memberSelect.addEventListener('change', () => {
+        saveCurrentForm();
+        selectedMember = elements.memberSelect.value;
+        localStorage.setItem(SELECTED_MEMBER_STORAGE_KEY, selectedMember);
+        renderEntryForm();
+      });
+      elements.grossRank.addEventListener('change', () => updateRank('grossRank', elements.grossRank.value));
+      elements.netRank.addEventListener('change', () => updateRank('netRank', elements.netRank.value));
+    }
+
+    function getSavedSelectedMember() {
+      const savedMember = localStorage.getItem(SELECTED_MEMBER_STORAGE_KEY);
+      return MEMBERS.some(member => member.name === savedMember) ? savedMember : MEMBERS[0].name;
+    }
+
+    function buildRankOptions() {
+      const options = RANK_OPTIONS.map(option => `<option value="${option.value}">${option.label}</option>`).join('');
+      elements.grossRank.innerHTML = options;
+      elements.netRank.innerHTML = options;
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-button').forEach(button => button.classList.toggle('active', button.dataset.tab === tab));
+      document.getElementById('rankingPanel').classList.toggle('active', tab === 'ranking');
+      document.getElementById('entryPanel').classList.toggle('active', tab === 'entry');
+      document.getElementById('adminPanel').classList.toggle('active', tab === 'admin');
+      render();
+      if (tab === 'entry') requestAnimationFrame(scrollToNextEntryHole);
+    }
+
+    function scrollToNextEntryHole() {
+      const nextHoleIndex = getNextEntryHoleIndex(selectedMember);
+      const target = nextHoleIndex < 18 ? elements.holes.children[nextHoleIndex] : elements.grossRank;
+      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function buildMemberSelect() {
+      elements.memberSelect.innerHTML = MEMBERS
+        .map(member => `<option value="${member.name}">${member.name} / ${TEAM_LABELS[member.team]}</option>`)
+        .join('');
+      elements.memberSelect.value = selectedMember;
+    }
+
+    function buildHoles() {
+      elements.holes.innerHTML = '';
+      for (let index = 0; index < 18; index += 1) {
+        const hole = document.createElement('article');
+        hole.className = 'hole';
+        hole.innerHTML = `
+          <div class="hole-title"><span>${index + 1}H</span></div>
+          <label class="field">オリンピック
+            <select data-hole="${index}" data-field="olympic">
+              ${OLYMPIC_OPTIONS.map(option => `<option value="${option.value}">${option.label}${option.points ? `(${option.points})` : ''}</option>`).join('')}
+            </select>
+          </label>
+          <label class="near-pin">
+            <input type="checkbox" data-hole="${index}" data-field="nearPin"> ニアピン +3
+          </label>
+          <label class="field">ミッションポイント
+            <span class="stepper">
+              <button type="button" data-hole-step="${index}" data-delta="-1">-</button>
+              <input type="number" min="0" max="99" data-hole="${index}" data-field="mission">
+              <button type="button" data-hole-step="${index}" data-delta="1">+</button>
+            </span>
+          </label>
+        `;
+        elements.holes.appendChild(hole);
+      }
+      elements.holes.addEventListener('change', event => {
+        const target = event.target;
+        if (target.dataset.hole) {
+          saveCurrentForm();
+          requestSave();
+        }
+        render();
+      });
+      elements.holes.addEventListener('click', event => {
+        const button = event.target.closest('[data-hole-step]');
+        if (!button) return;
+        const input = elements.holes.querySelector(`[data-hole="${button.dataset.holeStep}"][data-field="mission"]`);
+        input.value = clampNumber(Number(input.value) + Number(button.dataset.delta), 0, 99, 0);
+        saveCurrentForm();
+        render();
+        requestSave();
+      });
+    }
+
+    function render() {
+      renderEntryForm();
+      renderRanking();
+      renderValidation();
+    }
+
+    function renderEntryForm() {
+      const member = state.members[selectedMember];
+      elements.memberSelect.value = selectedMember;
+      elements.grossRank.value = member.grossRank;
+      elements.netRank.value = member.netRank;
+      member.holes.forEach((hole, index) => {
+        elements.holes.querySelector(`[data-hole="${index}"][data-field="olympic"]`).value = hole.olympic;
+        elements.holes.querySelector(`[data-hole="${index}"][data-field="nearPin"]`).checked = hole.nearPin;
+        elements.holes.querySelector(`[data-hole="${index}"][data-field="mission"]`).value = hole.mission;
+      });
+    }
+
+    function renderRanking() {
+      const rows = MEMBERS.map(member => ({ member, score: calculateMemberScore(member.name) }))
+        .sort((left, right) => right.score.total - left.score.total || left.member.name.localeCompare(right.member.name, 'ja'));
+      elements.rankingBody.innerHTML = rows.map((row, index) => `
+        <tr class="${index === 0 ? 'rank-1 ' : ''}team-${row.member.team.toLowerCase()}">
+          <td>${index + 1}</td>
+          <td>${row.member.name}</td>
+          <td><strong>${row.score.total}</strong></td>
+          <td>${getProgressLabel(row.member.name)}</td>
+          <td>${row.score.olympic}</td>
+          <td>${row.score.nearPin}</td>
+          <td>${row.score.mission}</td>
+          <td>${row.score.gross}</td>
+          <td>${row.score.net}</td>
+        </tr>
+      `).join('');
+
+      const totals = calculateTeamTotals();
+      const winningTeam = totals.A === totals.B ? null : totals.A > totals.B ? 'A' : 'B';
+      elements.teamTotals.innerHTML = ['A', 'B'].map(team => `
+        <article class="team-total team-${team.toLowerCase()}${winningTeam === team ? ' winning' : ''}">
+          <strong>${TEAM_LABELS[team]}</strong>
+          <span>${totals[team]}</span>
+        </article>
+      `).join('');
+    }
+
+    function renderValidation() {
+      const errors = validateRanks();
+      elements.validationErrors.classList.toggle('visible', errors.length > 0);
+      elements.validationErrors.innerHTML = errors.join('<br>');
+    }
+
+    function saveCurrentForm() {
+      const member = state.members[selectedMember];
+      member.grossRank = clampNumber(elements.grossRank.value, 1, 4, 1);
+      member.netRank = clampNumber(elements.netRank.value, 1, 4, 1);
+      member.holes = member.holes.map((hole, index) => ({
+        olympic: elements.holes.querySelector(`[data-hole="${index}"][data-field="olympic"]`).value,
+        nearPin: elements.holes.querySelector(`[data-hole="${index}"][data-field="nearPin"]`).checked,
+        mission: clampNumber(elements.holes.querySelector(`[data-hole="${index}"][data-field="mission"]`).value, 0, 99, 0)
+      }));
+    }
+
+    function updateRank(field, value) {
+      state.members[selectedMember][field] = clampNumber(value, 1, 4, 1);
+      render();
+      requestSave();
+    }
+
+    function validateRanks() {
+      const errors = [];
+      for (const field of ['grossRank', 'netRank']) {
+        const label = field === 'grossRank' ? 'グロス順位' : 'ネット順位';
+        const counts = new Map();
+        MEMBERS.forEach(member => {
+          const name = member.name;
+          const rank = state.members[name][field];
+          if (rank <= 3) {
+            counts.set(rank, [...(counts.get(rank) || []), name]);
+          }
+        });
+        counts.forEach((names, rank) => {
+          if (names.length > 1) errors.push(`${label} ${rankToLabel(rank)}が重複しています: ${names.join('、')}`);
+        });
+      }
+      return errors;
+    }
+
+    function calculateMemberScore(memberName) {
+      const member = state.members[memberName];
+      const olympic = member.holes.reduce((sum, hole, index) => sum + getOlympicPoints(memberName, index, hole.olympic), 0);
+      const nearPin = member.holes.reduce((sum, hole) => sum + (hole.nearPin ? 3 : 0), 0);
+      const mission = member.holes.reduce((sum, hole) => sum + clampNumber(hole.mission, 0, 99, 0), 0);
+      const gross = rankToPoints(member.grossRank);
+      const net = rankToPoints(member.netRank);
+      return { olympic, nearPin, mission, gross, net, total: olympic + nearPin + mission + gross + net };
+    }
+
+    function getProgressLabel(memberName) {
+      let completedHole = 0;
+      state.members[memberName].holes.forEach((hole, index) => {
+        if (hole.olympic !== '') completedHole = index + 1;
+      });
+      return completedHole === 0 ? '' : `${completedHole}H`;
+    }
+
+    function getNextEntryHoleIndex(memberName) {
+      const holes = state.members[memberName].holes;
+      const nextHoleIndex = holes.findIndex(hole => hole.olympic === '');
+      return nextHoleIndex >= 0 ? nextHoleIndex : holes.length;
+    }
+
+    function getOlympicPoints(memberName, holeIndex, olympic) {
+      const option = OLYMPIC_OPTIONS.find(item => item.value === olympic);
+      if (!option || !option.points) return 0;
+      const team = MEMBERS.find(member => member.name === memberName).team;
+      const sameTeamSameHoleSameContent = MEMBERS.some(member => {
+        if (member.name === memberName || member.team !== team) return false;
+        return state.members[member.name].holes[holeIndex].olympic === olympic;
+      });
+      return option.points * (sameTeamSameHoleSameContent ? 2 : 1);
+    }
+
+    function rankToPoints(rank) {
+      return { 1: 10, 2: 7, 3: 4, 4: 0 }[rank] || 0;
+    }
+
+    function rankToLabel(rank) {
+      return RANK_OPTIONS.find(option => option.value === rank)?.label || '圏外';
+    }
+
+    function calculateTeamTotals() {
+      return MEMBERS.reduce((totals, member) => {
+        totals[member.team] += calculateMemberScore(member.name).total;
+        return totals;
+      }, { A: 0, B: 0 });
+    }
+
+    async function loadPoints() {
+      if (!API_URL || API_URL.includes('xxxx.execute-api')) {
+        render();
+        return;
+      }
+      setLoading(true);
+      setStatus(elements.rankingStatus, '読み込み中...');
+      try {
+        const response = await fetch(API_URL, { method: 'GET' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        state = normalizeState(await response.json());
+        render();
+        setStatus(elements.rankingStatus, '読み込みました。');
+      } catch (error) {
+        setStatus(elements.rankingStatus, `読み込みに失敗しました: ${error.message}`, true);
+        render();
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function clearAllData() {
+      if (!window.confirm('localStorageとS3のデータをすべて削除します。よろしいですか？')) return;
+      if (!API_URL || API_URL.includes('xxxx.execute-api')) {
+        setStatus(elements.adminStatus, 'API URLが設定されていません。', true);
+        return;
+      }
+      setLoading(true);
+      elements.clearAllButton.disabled = true;
+      setStatus(elements.adminStatus, 'データを削除中...');
+      try {
+        const response = await fetch(API_URL, { method: 'DELETE' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        localStorage.clear();
+        state = createInitialState();
+        selectedMember = MEMBERS[0].name;
+        render();
+        setStatus(elements.adminStatus, 'localStorageとS3のデータを削除しました。');
+      } catch (error) {
+        setStatus(elements.adminStatus, `削除に失敗しました: ${error.message}`, true);
+      } finally {
+        setLoading(false);
+        elements.clearAllButton.disabled = false;
+      }
+    }
+
+    async function savePoints() {
+      saveCurrentForm();
+      const errors = validateRanks();
+      if (errors.length) {
+        renderValidation();
+        return;
+      }
+      if (!API_URL || API_URL.includes('xxxx.execute-api')) {
+        return;
+      }
+      state.updatedAt = new Date().toISOString();
+      setLoading(true);
+      try {
+        const response = await fetch(API_URL, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(state)
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        state = normalizeState(await response.json());
+        render();
+      } catch (error) {
+        console.error(`保存に失敗しました: ${error.message}`);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function requestSave() {
+      saveQueue = saveQueue.then(() => savePoints());
+    }
+
+    function setLoading(isLoading) {
+      elements.reloadButton.disabled = isLoading;
+    }
+
+    function setStatus(element, message, isError = false) {
+      element.textContent = message;
+      element.classList.toggle('error', isError);
+    }
+
+    function clampNumber(value, min, max, fallback) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return fallback;
+      return Math.min(max, Math.max(min, Math.trunc(number)));
+    }
+  </script>
+</body>
+</html>

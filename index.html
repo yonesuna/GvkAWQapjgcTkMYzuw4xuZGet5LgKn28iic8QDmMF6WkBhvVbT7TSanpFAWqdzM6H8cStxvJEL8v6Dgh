@@ -504,10 +504,11 @@
       elements.clearAllButton.addEventListener('click', clearAllData);
       elements.memberSelect.addEventListener('change', async () => {
         const previousMember = selectedMember;
+        const nextMember = elements.memberSelect.value;
         saveCurrentForm();
         requestSave(previousMember);
         await saveQueue;
-        selectedMember = elements.memberSelect.value;
+        selectedMember = nextMember;
         localStorage.setItem(SELECTED_MEMBER_STORAGE_KEY, selectedMember);
         await loadPoints();
       });

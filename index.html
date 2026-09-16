@@ -328,6 +328,43 @@
 
     .error-box.visible { display: block; }
 
+    .points-table {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .points-table th,
+    .points-table td {
+      text-align: left;
+    }
+
+    .points-table td:last-child,
+    .points-table th:last-child {
+      text-align: right;
+    }
+
+    .points-section {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .points-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .points-section h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .points-section .table-wrap {
+      align-self: start;
+    }
+
     @media (max-width: 860px) {
       header, .fields { grid-template-columns: 1fr; }
       header { display: grid; align-items: start; }
@@ -335,13 +372,14 @@
       .team-total span { font-size: clamp(26px, 8vw, 38px); }
       .holes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .panel { padding: 12px; }
+      .points-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <main class="app">
     <header>
-      <h1>まごころゴルフ in 別府決戦</h1>
+      <h1>⛳まごころゴルフ in 別府決戦</h1>
     </header>
 
     <nav class="tabs" aria-label="表示切替">
@@ -401,19 +439,48 @@
         <div class="status" id="adminStatus"></div>
         <button class="button" id="clearAllButton" type="button">すべてクリア</button>
       </div>
+      <div class="points-grid">
+        <section class="points-section">
+          <h2>オリンピック</h2>
+          <div class="table-wrap">
+            <table class="points-table">
+              <thead><tr><th>項目</th><th>ポイント</th></tr></thead>
+              <tbody id="olympicPointsTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="points-section">
+          <h2>グロス順位</h2>
+          <div class="table-wrap">
+            <table class="points-table">
+              <thead><tr><th>項目</th><th>ポイント</th></tr></thead>
+              <tbody id="grossPointsTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="points-section">
+          <h2>ネット順位</h2>
+          <div class="table-wrap">
+            <table class="points-table">
+              <thead><tr><th>項目</th><th>ポイント</th></tr></thead>
+              <tbody id="netPointsTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     </section>
   </main>
 
   <script>
     const MEMBERS = [
-      { name: 'ヤマ', team: 'A' },
-      { name: 'エモ', team: 'B' },
-      { name: 'ナガ', team: 'A' },
-      { name: 'タニ', team: 'A' },
-      { name: '畑中', team: 'A' },
-      { name: '坂本', team: 'B' },
-      { name: '米井', team: 'B' },
-      { name: '柴田', team: 'B' }
+      { name: 'ヤマ', team: 'B' },
+      { name: 'エモ', team: 'A' },
+      { name: 'ナガ', team: 'B' },
+      { name: 'タニ', team: 'B' },
+      { name: '畑中', team: 'B' },
+      { name: '坂本', team: 'A' },
+      { name: '米井', team: 'A' },
+      { name: '柴田', team: 'A' }
     ];
 
     const OLYMPIC_OPTIONS = [
@@ -451,12 +518,16 @@
       netRank: document.getElementById('netRank'),
       validationErrors: document.getElementById('validationErrors'),
       reloadButton: document.getElementById('reloadButton'),
-      clearAllButton: document.getElementById('clearAllButton')
+      clearAllButton: document.getElementById('clearAllButton'),
+      olympicPointsTableBody: document.getElementById('olympicPointsTableBody'),
+      grossPointsTableBody: document.getElementById('grossPointsTableBody'),
+      netPointsTableBody: document.getElementById('netPointsTableBody')
     };
 
     buildMemberSelect();
     buildRankOptions();
     buildHoles();
+    buildPointsTable();
     bindEvents();
     loadPoints();
 
@@ -527,6 +598,27 @@
       elements.netRank.innerHTML = options;
     }
 
+    function buildPointsTable() {
+      const olympicRows = OLYMPIC_OPTIONS
+        .filter(option => option.value !== '')
+        .map(option => ({ item: option.label, points: option.points }));
+      olympicRows.push({ item: 'クリアミッション', points: 3 });
+      const grossRows = RANK_OPTIONS.map(option => ({ item: option.label, points: grossRankToPoints(option.value) }));
+      const netRows = RANK_OPTIONS.map(option => ({ item: option.label, points: netRankToPoints(option.value) }));
+
+      const renderRows = rows => rows
+        .sort((left, right) => right.points - left.points || left.item.localeCompare(right.item, 'ja'))
+        .map(row => `
+        <tr>
+          <td>${row.item}</td>
+          <td>${row.points}点</td>
+        </tr>
+        `).join('');
+      elements.olympicPointsTableBody.innerHTML = renderRows(olympicRows);
+      elements.grossPointsTableBody.innerHTML = renderRows(grossRows);
+      elements.netPointsTableBody.innerHTML = renderRows(netRows);
+    }
+
     function switchTab(tab) {
       document.querySelectorAll('.tab-button').forEach(button => button.classList.toggle('active', button.dataset.tab === tab));
       document.getElementById('rankingPanel').classList.toggle('active', tab === 'ranking');
@@ -564,7 +656,7 @@
           <label class="near-pin">
             <input type="checkbox" data-hole="${index}" data-field="nearPin"> ニアピン +3
           </label>
-          <label class="field">ミッション
+          <label class="field">クリアミッション
             <span class="stepper">
               <button type="button" data-hole-step="${index}" data-delta="-1">-</button>
               <input type="number" min="0" max="99" data-hole="${index}" data-field="mission">
@@ -684,9 +776,9 @@
       const member = state.members[memberName];
       const olympic = member.holes.reduce((sum, hole, index) => sum + getOlympicPoints(memberName, index, hole.olympic), 0);
       const nearPin = member.holes.reduce((sum, hole) => sum + (hole.nearPin ? 3 : 0), 0);
-      const mission = member.holes.reduce((sum, hole) => sum + clampNumber(hole.mission, 0, 99, 0), 0);
-      const gross = rankToPoints(member.grossRank);
-      const net = rankToPoints(member.netRank);
+      const mission = member.holes.reduce((sum, hole) => sum + clampNumber(hole.mission, 0, 99, 0) * 3, 0);
+      const gross = grossRankToPoints(member.grossRank);
+      const net = netRankToPoints(member.netRank);
       return { olympic, nearPin, mission, gross, net, total: olympic + nearPin + mission + gross + net };
     }
 
@@ -715,8 +807,12 @@
       return option.points * (sameTeamSameHoleSameContent ? 2 : 1);
     }
 
-    function rankToPoints(rank) {
-      return { 1: 10, 2: 7, 3: 4, 4: 0 }[rank] || 0;
+    function grossRankToPoints(rank) {
+      return { 1: 7, 2: 5, 3: 3, 4: 0 }[rank] || 0;
+    }
+
+    function netRankToPoints(rank) {
+      return { 1: 10, 2: 6, 3: 4, 4: 0 }[rank] || 0;
     }
 
     function rankToLabel(rank) {

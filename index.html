@@ -502,11 +502,14 @@
       });
       elements.reloadButton.addEventListener('click', loadPoints);
       elements.clearAllButton.addEventListener('click', clearAllData);
-      elements.memberSelect.addEventListener('change', () => {
+      elements.memberSelect.addEventListener('change', async () => {
+        const previousMember = selectedMember;
         saveCurrentForm();
+        requestSave(previousMember);
+        await saveQueue;
         selectedMember = elements.memberSelect.value;
         localStorage.setItem(SELECTED_MEMBER_STORAGE_KEY, selectedMember);
-        renderEntryForm();
+        await loadPoints();
       });
       elements.grossRank.addEventListener('change', () => updateRank('grossRank', elements.grossRank.value));
       elements.netRank.addEventListener('change', () => updateRank('netRank', elements.netRank.value));
@@ -560,7 +563,7 @@
           <label class="near-pin">
             <input type="checkbox" data-hole="${index}" data-field="nearPin"> ニアピン +3
           </label>
-          <label class="field">ミッションポイント
+          <label class="field">ミッション
             <span class="stepper">
               <button type="button" data-hole-step="${index}" data-delta="-1">-</button>
               <input type="number" min="0" max="99" data-hole="${index}" data-field="mission">
@@ -574,7 +577,7 @@
         const target = event.target;
         if (target.dataset.hole) {
           saveCurrentForm();
-          requestSave();
+          requestSave(selectedMember, Number(target.dataset.hole));
         }
         render();
       });
@@ -585,7 +588,7 @@
         input.value = clampNumber(Number(input.value) + Number(button.dataset.delta), 0, 99, 0);
         saveCurrentForm();
         render();
-        requestSave();
+        requestSave(selectedMember, Number(button.dataset.holeStep));
       });
     }
 
@@ -772,7 +775,7 @@
       }
     }
 
-    async function savePoints() {
+    async function savePoints(memberName = selectedMember, holeIndex = null) {
       saveCurrentForm();
       const errors = validateRanks();
       if (errors.length) {
@@ -788,7 +791,7 @@
         const response = await fetch(API_URL, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(state)
+          body: JSON.stringify({ ...state, changedMember: memberName, changedHole: holeIndex })
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         state = normalizeState(await response.json());
@@ -800,8 +803,8 @@
       }
     }
 
-    function requestSave() {
-      saveQueue = saveQueue.then(() => savePoints());
+    function requestSave(memberName = selectedMember, holeIndex = null) {
+      saveQueue = saveQueue.then(() => savePoints(memberName, holeIndex));
     }
 
     function setLoading(isLoading) {

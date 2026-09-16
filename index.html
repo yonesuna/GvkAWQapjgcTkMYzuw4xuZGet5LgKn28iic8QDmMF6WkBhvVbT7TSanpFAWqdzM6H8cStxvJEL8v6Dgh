@@ -506,11 +506,11 @@
         const previousMember = selectedMember;
         const nextMember = elements.memberSelect.value;
         saveCurrentForm();
-        requestSave(previousMember);
-        await saveQueue;
         selectedMember = nextMember;
         localStorage.setItem(SELECTED_MEMBER_STORAGE_KEY, selectedMember);
-        await loadPoints();
+        renderEntryForm();
+        requestSave(previousMember, null, false);
+        saveQueue.then(() => loadPoints());
       });
       elements.grossRank.addEventListener('change', () => updateRank('grossRank', elements.grossRank.value));
       elements.netRank.addEventListener('change', () => updateRank('netRank', elements.netRank.value));
@@ -776,8 +776,8 @@
       }
     }
 
-    async function savePoints(memberName = selectedMember, holeIndex = null) {
-      saveCurrentForm();
+    async function savePoints(memberName = selectedMember, holeIndex = null, syncForm = true) {
+      if (syncForm) saveCurrentForm();
       const errors = validateRanks();
       if (errors.length) {
         renderValidation();
@@ -804,8 +804,8 @@
       }
     }
 
-    function requestSave(memberName = selectedMember, holeIndex = null) {
-      saveQueue = saveQueue.then(() => savePoints(memberName, holeIndex));
+    function requestSave(memberName = selectedMember, holeIndex = null, syncForm = true) {
+      saveQueue = saveQueue.then(() => savePoints(memberName, holeIndex, syncForm));
     }
 
     function setLoading(isLoading) {

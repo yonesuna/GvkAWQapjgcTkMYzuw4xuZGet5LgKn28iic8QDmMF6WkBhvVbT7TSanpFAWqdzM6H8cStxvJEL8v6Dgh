@@ -70,6 +70,7 @@
 
     .tabs {
       display: flex;
+      flex-wrap: nowrap;
       gap: 8px;
       border-bottom: 1px solid var(--line);
       margin-bottom: 18px;
@@ -79,10 +80,11 @@
       border: 1px solid transparent;
       border-bottom: 0;
       border-radius: 8px 8px 0 0;
-      padding: 11px 18px;
+      padding: 10px 14px;
       background: transparent;
       color: var(--muted);
       cursor: pointer;
+      line-height: 1.3;
     }
 
     .tab-button.active {
@@ -212,6 +214,8 @@
       background: #dbeadd;
       color: #1f3d29;
       font-size: 13px;
+      white-space: normal;
+      word-break: keep-all;
     }
 
     tbody tr:last-child td { border-bottom: 0; }
@@ -235,9 +239,6 @@
       color: var(--team-b);
       font-weight: 700;
     }
-
-    .rank-1.team-a td { background: rgba(184, 66, 50, 0.34); }
-    .rank-1.team-b td { background: rgba(43, 93, 168, 0.32); }
 
     .entry-layout {
       display: grid;
@@ -349,11 +350,26 @@
       align-content: start;
     }
 
+    .admin-section {
+      display: grid;
+      gap: 14px;
+    }
+
+    .admin-section + .admin-section {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .admin-section-title {
+      margin: 0;
+      font-size: 22px;
+    }
+
     .points-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 14px;
-      margin-top: 18px;
     }
 
     .points-section h2 {
@@ -365,6 +381,50 @@
       align-self: start;
     }
 
+    .table-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .mission-list, .near-pin-list { display: grid; gap: 10px; }
+
+    .mission-row, .near-pin-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(238, 247, 237, 0.72);
+    }
+
+    .mission-row label { display: flex; align-items: center; gap: 10px; }
+
+    .admin-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 18px;
+    }
+
+    .rule-list {
+      margin: 0;
+      padding: 12px 16px 12px 34px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--ink);
+      line-height: 1.8;
+    }
+
     @media (max-width: 860px) {
       header, .fields { grid-template-columns: 1fr; }
       header { display: grid; align-items: start; }
@@ -373,19 +433,47 @@
       .holes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .panel { padding: 12px; }
       .points-grid { grid-template-columns: 1fr; }
+      .rules-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      .tabs {
+        gap: 3px;
+        margin-bottom: 12px;
+        align-items: stretch;
+      }
+
+      .tab-button {
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 7px 4px;
+        font-size: 12px;
+        white-space: normal;
+      }
+
+      table { min-width: 420px; }
+
+      th, td {
+        padding: 6px 6px;
+        font-size: 12px;
+      }
+
+      th { font-size: 11px; }
     }
   </style>
 </head>
 <body>
   <main class="app">
     <header>
-      <h1>⛳まごころゴルフ in 別府決戦</h1>
+      <h1>⛳まごころゴルフin別府決戦</h1>
     </header>
 
     <nav class="tabs" aria-label="表示切替">
       <button class="tab-button active" type="button" data-tab="ranking">順位表</button>
-      <button class="tab-button" type="button" data-tab="entry">ポイント入力</button>
-      <button class="tab-button" type="button" data-tab="admin">管理者</button>
+      <button class="tab-button" type="button" data-tab="entry">スコア入力</button>
+      <button class="tab-button" type="button" data-tab="mission">チームミッション</button>
+      <button class="tab-button" type="button" data-tab="nearPin">ニアピン</button>
+      <button class="tab-button" type="button" data-tab="admin">その他</button>
     </nav>
 
     <section class="panel active" id="rankingPanel">
@@ -402,11 +490,9 @@
               <th>メンバー</th>
               <th>合計</th>
               <th>進行</th>
-              <th>オリン<br>ピック</th>
-              <th>ニア<br>ピン</th>
-              <th>ミッ<br>ション</th>
-              <th>グロス<br>順位</th>
-              <th>ネット<br>順位</th>
+              <th>オリンピック</th>
+              <th>グロス順位</th>
+              <th>ネット順位</th>
             </tr>
           </thead>
           <tbody id="rankingBody"></tbody>
@@ -422,52 +508,80 @@
             <select id="memberSelect"></select>
           </label>
           <div class="holes" id="holes"></div>
-          <div class="fields">
-            <label class="field">グロス順位
-              <select id="grossRank"></select>
-            </label>
-            <label class="field">ネット順位
-              <select id="netRank"></select>
-            </label>
-          </div>
         </section>
+      </div>
+    </section>
+
+    <section class="panel" id="missionPanel">
+      <div class="entry-layout">
+        <div class="mission-list" id="missionList"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="nearPinPanel">
+      <div class="entry-layout">
+        <div class="near-pin-list" id="nearPinList"></div>
       </div>
     </section>
 
     <section class="panel" id="adminPanel">
       <div class="toolbar">
         <div class="status" id="adminStatus"></div>
-        <button class="button" id="clearAllButton" type="button">すべてクリア</button>
       </div>
-      <div class="points-grid">
-        <section class="points-section">
-          <h2>オリンピック</h2>
-          <div class="table-wrap">
-            <table class="points-table">
-              <thead><tr><th>項目</th><th>ポイント</th></tr></thead>
-              <tbody id="olympicPointsTableBody"></tbody>
-            </table>
-          </div>
-        </section>
-        <section class="points-section">
-          <h2>グロス順位</h2>
-          <div class="table-wrap">
-            <table class="points-table">
-              <thead><tr><th>項目</th><th>ポイント</th></tr></thead>
-              <tbody id="grossPointsTableBody"></tbody>
-            </table>
-          </div>
-        </section>
-        <section class="points-section">
-          <h2>ネット順位</h2>
-          <div class="table-wrap">
-            <table class="points-table">
-              <thead><tr><th>項目</th><th>ポイント</th></tr></thead>
-              <tbody id="netPointsTableBody"></tbody>
-            </table>
-          </div>
-        </section>
-      </div>
+      <section class="admin-section">
+        <h2 class="admin-section-title">ポイント表</h2>
+        <div class="points-grid">
+          <section class="points-section">
+            <h2>オリンピック</h2>
+            <div class="table-wrap">
+              <table class="points-table">
+                <thead><tr><th>項目</th><th>ポイント</th></tr></thead>
+                <tbody id="olympicPointsTableBody"></tbody>
+              </table>
+            </div>
+            <p class="table-note">カンあり：各組でのチーム達成×２倍</p>
+          </section>
+          <section class="points-section">
+            <h2>グロス順位</h2>
+            <div class="table-wrap">
+              <table class="points-table">
+                <thead><tr><th>項目</th><th>ポイント</th></tr></thead>
+                <tbody id="grossPointsTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="points-section">
+            <h2>ネット順位</h2>
+            <div class="table-wrap">
+              <table class="points-table">
+                <thead><tr><th>項目</th><th>ポイント</th></tr></thead>
+                <tbody id="netPointsTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+        <div class="rules-grid">
+          <section class="points-section">
+            <h2>ミッションカード</h2>
+            <ul class="rule-list">
+              <li>1ミッション3ポイント</li>
+            </ul>
+          </section>
+          <section class="points-section">
+            <h2>ニアピン</h2>
+            <ul class="rule-list">
+              <li>3ポイント</li>
+              <li>パー縛りなし</li>
+            </ul>
+          </section>
+        </div>
+      </section>
+      <section class="admin-section">
+        <h2 class="admin-section-title">メンテナンス</h2>
+        <div class="admin-actions">
+          <button class="button" id="clearAllButton" type="button">すべてクリア</button>
+        </div>
+      </section>
     </section>
   </main>
 
@@ -500,12 +614,31 @@
       { label: '圏外', value: 4 }
     ];
 
+    const MISSION_LABELS = [
+      'ハーフ30台で回りなさい！', 'オナーを５回以上獲得せよ！', '銅パットを決めよ！', '銀パットを決めよ！',
+      '合計5回以上1パットを決めよ！', '全ホールどちらかがダボ以内！', 'チップインを決めよ！', 'どちらかがハーフのグロス・トップ！',
+      '鉄パットを決めよ！', 'ショートホールでニアピンを取れ！', '最初のホールでドラコン！', 'チームで３ホール連続パー！',
+      'チームで１パットを１回！', '金パットを決めよ！', '両方１回以上１パットを決めよ！', 'チームで金・銀・銅・鉄を獲得！',
+      'バーディを取れ！', '同じホールで両方パー！', '２番目のホールは両方ダボ以内！', 'ショートホールで１オン！',
+      'パー数で相手チームを上回れ！', 'ショートホールでパー！', '１パット数で相手チームを上回れ！', '同じホールで両方１パット！'
+    ];
+    const MISSION_GROUPS = [
+      { value: '1A', label: '1組目/Aチーム' }, { value: '1B', label: '1組目/Bチーム' },
+      { value: '2A', label: '2組目/Aチーム' }, { value: '2B', label: '2組目/Bチーム' }
+    ];
+    const NEAR_PIN_HOLES = [12, 15, 3, 5, 8];
+
     const TEAM_LABELS = { A: 'Aチーム', B: 'Bチーム' };
     const API_URL = 'https://n6223mtla2.execute-api.ap-northeast-1.amazonaws.com/points';
+    const MISSION_API_URL = `${API_URL}?data=mission`;
+    const NEAR_PIN_API_URL = `${API_URL}?data=nearPin`;
     const SELECTED_MEMBER_STORAGE_KEY = 'golfSelectedMember';
     let state = createInitialState();
+    let missionState = createInitialMissionState();
+    let nearPinState = createInitialNearPinState();
     let selectedMember = getSavedSelectedMember();
     let saveQueue = Promise.resolve();
+    const loadedDatasets = new Set(['olympic']);
 
     const elements = {
       rankingStatus: document.getElementById('rankingStatus'),
@@ -514,8 +647,8 @@
       rankingBody: document.getElementById('rankingBody'),
       memberSelect: document.getElementById('memberSelect'),
       holes: document.getElementById('holes'),
-      grossRank: document.getElementById('grossRank'),
-      netRank: document.getElementById('netRank'),
+      missionList: document.getElementById('missionList'),
+      nearPinList: document.getElementById('nearPinList'),
       validationErrors: document.getElementById('validationErrors'),
       reloadButton: document.getElementById('reloadButton'),
       clearAllButton: document.getElementById('clearAllButton'),
@@ -525,8 +658,9 @@
     };
 
     buildMemberSelect();
-    buildRankOptions();
     buildHoles();
+    buildMissionForm();
+    buildNearPinForm();
     buildPointsTable();
     bindEvents();
     loadPoints();
@@ -543,7 +677,23 @@
       return {
         grossRank: 4,
         netRank: 4,
-        holes: Array.from({ length: 18 }, () => ({ olympic: '', nearPin: false, mission: 0 }))
+        holes: Array.from({ length: 18 }, () => ({ score: '', olympic: '' }))
+      };
+    }
+
+    function createInitialMissionState() {
+      return {
+        version: 1,
+        updatedAt: null,
+        groups: Object.fromEntries(MISSION_GROUPS.map(group => [group.value, Array.from({ length: 6 }, () => ({ mission: '', completed: false }))]))
+      };
+    }
+
+    function createInitialNearPinState() {
+      return {
+        version: 1,
+        updatedAt: null,
+        holes: Object.fromEntries(NEAR_PIN_HOLES.map(hole => [hole, '']))
       };
     }
 
@@ -558,12 +708,40 @@
         next.members[member.name].holes = Array.from({ length: 18 }, (_, index) => {
           const hole = saved.holes?.[index] || {};
           return {
-            olympic: OLYMPIC_OPTIONS.some(option => option.value === hole.olympic) ? hole.olympic : '',
-            nearPin: Boolean(hole.nearPin),
-            mission: clampNumber(hole.mission, 0, 99, 0)
+            score: normalizeScore(hole.score),
+            olympic: OLYMPIC_OPTIONS.some(option => option.value === hole.olympic) ? hole.olympic : ''
           };
         });
       }
+      return next;
+    }
+
+    function normalizeMissionState(input) {
+      const next = createInitialMissionState();
+      if (!input || typeof input !== 'object') return next;
+      next.updatedAt = input.updatedAt || null;
+      MISSION_GROUPS.forEach(group => {
+        const values = input.groups?.[group.value] || [];
+        next.groups[group.value] = Array.from({ length: 6 }, (_, index) => {
+          const value = values[index] || {};
+          const mission = Number(value.mission);
+          return {
+            mission: Number.isInteger(mission) && mission >= 1 && mission <= MISSION_LABELS.length ? String(mission) : '',
+            completed: Boolean(value.completed)
+          };
+        });
+      });
+      return next;
+    }
+
+    function normalizeNearPinState(input) {
+      const next = createInitialNearPinState();
+      if (!input || typeof input !== 'object') return next;
+      next.updatedAt = input.updatedAt || null;
+      NEAR_PIN_HOLES.forEach(hole => {
+        const value = input.holes?.[hole];
+        next.holes[hole] = MEMBERS.some(member => member.name === value) ? value : '';
+      });
       return next;
     }
 
@@ -573,6 +751,20 @@
       });
       elements.reloadButton.addEventListener('click', loadPoints);
       elements.clearAllButton.addEventListener('click', clearAllData);
+      elements.missionList.addEventListener('change', event => {
+        const group = event.target.dataset.missionGroup;
+        const index = Number(event.target.dataset.missionIndex);
+        if (!group || !Number.isInteger(index)) return;
+        const mission = missionState.groups[group][index];
+        if (event.target.matches('[data-mission-select]')) mission.mission = event.target.value;
+        if (event.target.matches('[data-mission-completed]')) mission.completed = event.target.checked;
+        requestDatasetSave(MISSION_API_URL, missionState, value => { missionState = normalizeMissionState(value); });
+      });
+      elements.nearPinList.addEventListener('change', event => {
+        if (!event.target.matches('[data-near-pin-hole]')) return;
+        nearPinState.holes[event.target.dataset.nearPinHole] = event.target.value;
+        requestDatasetSave(NEAR_PIN_API_URL, nearPinState, value => { nearPinState = normalizeNearPinState(value); });
+      });
       elements.memberSelect.addEventListener('change', async () => {
         const previousMember = selectedMember;
         const nextMember = elements.memberSelect.value;
@@ -583,8 +775,6 @@
         requestSave(previousMember, null, false);
         saveQueue.then(() => loadPoints());
       });
-      elements.grossRank.addEventListener('change', () => updateRank('grossRank', elements.grossRank.value));
-      elements.netRank.addEventListener('change', () => updateRank('netRank', elements.netRank.value));
     }
 
     function getSavedSelectedMember() {
@@ -592,17 +782,52 @@
       return MEMBERS.some(member => member.name === savedMember) ? savedMember : MEMBERS[0].name;
     }
 
-    function buildRankOptions() {
-      const options = RANK_OPTIONS.map(option => `<option value="${option.value}">${option.label}</option>`).join('');
-      elements.grossRank.innerHTML = options;
-      elements.netRank.innerHTML = options;
+    function buildMissionForm() {
+      elements.missionList.innerHTML = MISSION_GROUPS.map(group => `
+        <section class="points-section">
+          <h2>${group.label}</h2>
+          ${Array.from({ length: 6 }, (_, index) => `
+            <div class="mission-row">
+              <select data-mission-group="${group.value}" data-mission-index="${index}" data-mission-select>
+                <option value="">ミッションを選択</option>
+                ${MISSION_LABELS.map((label, missionIndex) => `<option value="${missionIndex + 1}">${missionIndex + 1}. ${label}</option>`).join('')}
+              </select>
+              <label><input type="checkbox" data-mission-group="${group.value}" data-mission-index="${index}" data-mission-completed> 達成</label>
+            </div>
+          `).join('')}
+        </section>
+      `).join('');
+    }
+
+    function buildNearPinForm() {
+      elements.nearPinList.innerHTML = NEAR_PIN_HOLES.map(hole => `
+        <label class="near-pin-row"><span>${hole}H</span><select data-near-pin-hole="${hole}">
+          <option value="">未選択</option>${MEMBERS.map(member => `<option value="${member.name}">${member.name}</option>`).join('')}
+        </select></label>
+      `).join('');
+    }
+
+    function renderMissionForm() {
+      elements.missionList.querySelectorAll('[data-mission-select]').forEach(select => {
+        const mission = missionState.groups[select.dataset.missionGroup][Number(select.dataset.missionIndex)];
+        select.value = mission.mission;
+      });
+      elements.missionList.querySelectorAll('[data-mission-completed]').forEach(input => {
+        const mission = missionState.groups[input.dataset.missionGroup][Number(input.dataset.missionIndex)];
+        input.checked = mission.completed;
+      });
+    }
+
+    function renderNearPinForm() {
+      elements.nearPinList.querySelectorAll('[data-near-pin-hole]').forEach(select => {
+        select.value = nearPinState.holes[select.dataset.nearPinHole];
+      });
     }
 
     function buildPointsTable() {
       const olympicRows = OLYMPIC_OPTIONS
         .filter(option => option.value !== '')
         .map(option => ({ item: option.label, points: option.points }));
-      olympicRows.push({ item: 'クリアミッション', points: 3 });
       const grossRows = RANK_OPTIONS.map(option => ({ item: option.label, points: grossRankToPoints(option.value) }));
       const netRows = RANK_OPTIONS.map(option => ({ item: option.label, points: netRankToPoints(option.value) }));
 
@@ -623,14 +848,17 @@
       document.querySelectorAll('.tab-button').forEach(button => button.classList.toggle('active', button.dataset.tab === tab));
       document.getElementById('rankingPanel').classList.toggle('active', tab === 'ranking');
       document.getElementById('entryPanel').classList.toggle('active', tab === 'entry');
+      document.getElementById('missionPanel').classList.toggle('active', tab === 'mission');
+      document.getElementById('nearPinPanel').classList.toggle('active', tab === 'nearPin');
       document.getElementById('adminPanel').classList.toggle('active', tab === 'admin');
       render();
+      if (tab === 'mission' || tab === 'nearPin') loadDataset(tab);
       if (tab === 'entry') requestAnimationFrame(scrollToNextEntryHole);
     }
 
     function scrollToNextEntryHole() {
       const nextHoleIndex = getNextEntryHoleIndex(selectedMember);
-      const target = nextHoleIndex < 18 ? elements.holes.children[nextHoleIndex] : elements.grossRank;
+      const target = nextHoleIndex < 18 ? elements.holes.children[nextHoleIndex] : elements.holes.lastElementChild;
       target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -648,20 +876,17 @@
         hole.className = 'hole';
         hole.innerHTML = `
           <div class="hole-title"><span>${index + 1}H</span></div>
+          <label class="field">スコア
+            <span class="stepper">
+              <button type="button" data-score-step="${index}" data-delta="-1" aria-label="${index + 1}Hのスコアを1減らす">−</button>
+              <input type="number" min="1" max="99" inputmode="numeric" data-hole="${index}" data-field="score">
+              <button type="button" data-score-step="${index}" data-delta="1" aria-label="${index + 1}Hのスコアを1増やす">＋</button>
+            </span>
+          </label>
           <label class="field">オリンピック
             <select data-hole="${index}" data-field="olympic">
               ${OLYMPIC_OPTIONS.map(option => `<option value="${option.value}">${option.label}${option.points ? `(${option.points})` : ''}</option>`).join('')}
             </select>
-          </label>
-          <label class="near-pin">
-            <input type="checkbox" data-hole="${index}" data-field="nearPin"> ニアピン +3
-          </label>
-          <label class="field">クリアミッション
-            <span class="stepper">
-              <button type="button" data-hole-step="${index}" data-delta="-1">-</button>
-              <input type="number" min="0" max="99" data-hole="${index}" data-field="mission">
-              <button type="button" data-hole-step="${index}" data-delta="1">+</button>
-            </span>
           </label>
         `;
         elements.holes.appendChild(hole);
@@ -675,18 +900,25 @@
         render();
       });
       elements.holes.addEventListener('click', event => {
-        const button = event.target.closest('[data-hole-step]');
+        const button = event.target.closest('[data-score-step]');
         if (!button) return;
-        const input = elements.holes.querySelector(`[data-hole="${button.dataset.holeStep}"][data-field="mission"]`);
-        input.value = clampNumber(Number(input.value) + Number(button.dataset.delta), 0, 99, 0);
+        const holeIndex = Number(button.dataset.scoreStep);
+        const input = elements.holes.querySelector(`[data-hole="${holeIndex}"][data-field="score"]`);
+        const currentScore = normalizeScore(input.value);
+        const nextScore = currentScore === ''
+          ? (Number(button.dataset.delta) > 0 ? 1 : '')
+          : clampNumber(currentScore + Number(button.dataset.delta), 1, 99, 1);
+        input.value = nextScore;
         saveCurrentForm();
         render();
-        requestSave(selectedMember, Number(button.dataset.holeStep));
+        requestSave(selectedMember, holeIndex);
       });
     }
 
     function render() {
       renderEntryForm();
+      renderMissionForm();
+      renderNearPinForm();
       renderRanking();
       renderValidation();
     }
@@ -694,12 +926,9 @@
     function renderEntryForm() {
       const member = state.members[selectedMember];
       elements.memberSelect.value = selectedMember;
-      elements.grossRank.value = member.grossRank;
-      elements.netRank.value = member.netRank;
       member.holes.forEach((hole, index) => {
+        elements.holes.querySelector(`[data-hole="${index}"][data-field="score"]`).value = hole.score;
         elements.holes.querySelector(`[data-hole="${index}"][data-field="olympic"]`).value = hole.olympic;
-        elements.holes.querySelector(`[data-hole="${index}"][data-field="nearPin"]`).checked = hole.nearPin;
-        elements.holes.querySelector(`[data-hole="${index}"][data-field="mission"]`).value = hole.mission;
       });
     }
 
@@ -707,14 +936,12 @@
       const rows = MEMBERS.map(member => ({ member, score: calculateMemberScore(member.name) }))
         .sort((left, right) => right.score.total - left.score.total || left.member.name.localeCompare(right.member.name, 'ja'));
       elements.rankingBody.innerHTML = rows.map((row, index) => `
-        <tr class="${index === 0 ? 'rank-1 ' : ''}team-${row.member.team.toLowerCase()}">
+        <tr class="team-${row.member.team.toLowerCase()} ">
           <td>${index + 1}</td>
           <td>${row.member.name}</td>
           <td><strong>${row.score.total}</strong></td>
           <td>${getProgressLabel(row.member.name)}</td>
           <td>${row.score.olympic}</td>
-          <td>${row.score.nearPin}</td>
-          <td>${row.score.mission}</td>
           <td>${row.score.gross}</td>
           <td>${row.score.net}</td>
         </tr>
@@ -738,12 +965,9 @@
 
     function saveCurrentForm() {
       const member = state.members[selectedMember];
-      member.grossRank = clampNumber(elements.grossRank.value, 1, 4, 1);
-      member.netRank = clampNumber(elements.netRank.value, 1, 4, 1);
       member.holes = member.holes.map((hole, index) => ({
-        olympic: elements.holes.querySelector(`[data-hole="${index}"][data-field="olympic"]`).value,
-        nearPin: elements.holes.querySelector(`[data-hole="${index}"][data-field="nearPin"]`).checked,
-        mission: clampNumber(elements.holes.querySelector(`[data-hole="${index}"][data-field="mission"]`).value, 0, 99, 0)
+        score: normalizeScore(elements.holes.querySelector(`[data-hole="${index}"][data-field="score"]`).value),
+        olympic: elements.holes.querySelector(`[data-hole="${index}"][data-field="olympic"]`).value
       }));
     }
 
@@ -775,24 +999,22 @@
     function calculateMemberScore(memberName) {
       const member = state.members[memberName];
       const olympic = member.holes.reduce((sum, hole, index) => sum + getOlympicPoints(memberName, index, hole.olympic), 0);
-      const nearPin = member.holes.reduce((sum, hole) => sum + (hole.nearPin ? 3 : 0), 0);
-      const mission = member.holes.reduce((sum, hole) => sum + clampNumber(hole.mission, 0, 99, 0) * 3, 0);
       const gross = grossRankToPoints(member.grossRank);
       const net = netRankToPoints(member.netRank);
-      return { olympic, nearPin, mission, gross, net, total: olympic + nearPin + mission + gross + net };
+      return { olympic, gross, net, total: olympic + gross + net };
     }
 
     function getProgressLabel(memberName) {
       let completedHole = 0;
       state.members[memberName].holes.forEach((hole, index) => {
-        if (hole.olympic !== '') completedHole = index + 1;
+        if (hole.score !== '') completedHole = index + 1;
       });
       return completedHole === 0 ? '' : `${completedHole}H`;
     }
 
     function getNextEntryHoleIndex(memberName) {
       const holes = state.members[memberName].holes;
-      const nextHoleIndex = holes.findIndex(hole => hole.olympic === '');
+      const nextHoleIndex = holes.findIndex(hole => hole.score === '');
       return nextHoleIndex >= 0 ? nextHoleIndex : holes.length;
     }
 
@@ -827,16 +1049,11 @@
     }
 
     async function loadPoints() {
-      if (!API_URL || API_URL.includes('xxxx.execute-api')) {
-        render();
-        return;
-      }
       setLoading(true);
       setStatus(elements.rankingStatus, '読み込み中...');
       try {
-        const response = await fetch(API_URL, { method: 'GET' });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        state = normalizeState(await response.json());
+        state = normalizeState(await fetch(API_URL, { method: 'GET' }).then(response => readApiResponse(response, 'スコア')));
+        loadedDatasets.add('olympic');
         render();
         setStatus(elements.rankingStatus, '読み込みました。');
       } catch (error) {
@@ -847,20 +1064,40 @@
       }
     }
 
-    async function clearAllData() {
-      if (!window.confirm('localStorageとS3のデータをすべて削除します。よろしいですか？')) return;
-      if (!API_URL || API_URL.includes('xxxx.execute-api')) {
-        setStatus(elements.adminStatus, 'API URLが設定されていません。', true);
-        return;
+    async function readApiResponse(response, datasetName) {
+      if (!response.ok) throw new Error(`${datasetName} HTTP ${response.status}`);
+      return response.json();
+    }
+
+    async function loadDataset(dataset) {
+      if (loadedDatasets.has(dataset)) return;
+      const url = dataset === 'mission' ? MISSION_API_URL : NEAR_PIN_API_URL;
+      try {
+        const data = await fetch(url, { method: 'GET' }).then(response => readApiResponse(response, dataset === 'mission' ? 'ミッション' : 'ニアピン'));
+        if (dataset === 'mission') missionState = normalizeMissionState(data);
+        if (dataset === 'nearPin') nearPinState = normalizeNearPinState(data);
+        loadedDatasets.add(dataset);
+        render();
+      } catch (error) {
+        setStatus(elements.rankingStatus, `${dataset === 'mission' ? 'ミッション' : 'ニアピン'}の読み込みに失敗しました: ${error.message}`, true);
       }
+    }
+
+    async function clearAllData() {
+      if (!window.confirm('入力したデータがすべて削除され、全員に反映されますが大丈夫ですか？')) return;
+      if (!window.confirm('本当に大丈夫ですか？')) return;
       setLoading(true);
       elements.clearAllButton.disabled = true;
       setStatus(elements.adminStatus, 'データを削除中...');
       try {
-        const response = await fetch(API_URL, { method: 'DELETE' });
+        const response = await fetch(`${API_URL}?action=clearAll`, { method: 'DELETE' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         localStorage.clear();
         state = createInitialState();
+        missionState = createInitialMissionState();
+        nearPinState = createInitialNearPinState();
+        loadedDatasets.clear();
+        loadedDatasets.add('olympic');
         selectedMember = MEMBERS[0].name;
         render();
         setStatus(elements.adminStatus, 'localStorageとS3のデータを削除しました。');
@@ -877,9 +1114,6 @@
       const errors = validateRanks();
       if (errors.length) {
         renderValidation();
-        return;
-      }
-      if (!API_URL || API_URL.includes('xxxx.execute-api')) {
         return;
       }
       state.updatedAt = new Date().toISOString();
@@ -900,6 +1134,28 @@
       }
     }
 
+    async function saveDataset(url, dataset) {
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dataset)
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    }
+
+    function requestDatasetSave(url, dataset, applyResponse) {
+      saveQueue = saveQueue.then(async () => {
+        try {
+          const saved = await saveDataset(url, dataset);
+          applyResponse(saved);
+          render();
+        } catch (error) {
+          console.error(`保存に失敗しました: ${error.message}`);
+        }
+      });
+    }
+
     function requestSave(memberName = selectedMember, holeIndex = null, syncForm = true) {
       saveQueue = saveQueue.then(() => savePoints(memberName, holeIndex, syncForm));
     }
@@ -917,6 +1173,12 @@
       const number = Number(value);
       if (!Number.isFinite(number)) return fallback;
       return Math.min(max, Math.max(min, Math.trunc(number)));
+    }
+
+    function normalizeScore(value) {
+      return value === '' || value === null || value === undefined
+        ? ''
+        : clampNumber(value, 1, 99, '');
     }
   </script>
 </body>

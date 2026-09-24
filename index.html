@@ -551,7 +551,7 @@
     .mission-grid-header,
     .mission-row {
       display: grid;
-      grid-template-columns: minmax(0, 1.4fr) 30px 30px;
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
       gap: 10px;
     }
@@ -579,6 +579,7 @@
 
     .mission-row select {
       width: 100%;
+      min-width: 0;
       min-height: 36px;
     }
 
@@ -586,16 +587,19 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 2px;
+      gap: 6px;
       white-space: nowrap;
-      min-width: 30px;
+      min-width: 84px;
       padding: 0;
+      font-size: 14px;
+      color: var(--ink);
     }
 
     .mission-row input[type="checkbox"] {
       margin: 0;
       width: 16px;
       height: 16px;
+      flex-shrink: 0;
     }
 
     .admin-actions {
@@ -635,18 +639,18 @@
         flex: 1 1 0;
         min-width: 0;
         padding: 7px 4px;
-        font-size: 12px;
+        font-size: 14px;
         white-space: normal;
       }
 
       .mission-grid-header,
       .mission-row {
-        grid-template-columns: minmax(0, 1.4fr) 30px 30px;
+        grid-template-columns: minmax(0, 1fr) auto;
       }
 
       .mission-grid-header {
         display: grid;
-        grid-template-columns: minmax(0, 1.4fr) 30px 30px;
+        grid-template-columns: minmax(0, 1fr) auto;
       }
 
       .mission-row {
@@ -654,7 +658,7 @@
       }
 
       .mission-row label {
-        min-width: 0;
+        min-width: 74px;
         justify-content: center;
         padding: 0;
       }
@@ -849,10 +853,14 @@
       'パー数で相手チームを上回れ！', 'ショートホールでパー！', '１パット数で相手チームを上回れ！', '同じホールで両方１パット！'
     ];
     const MISSION_GROUPS = [
-      { value: '1-front', label: '1組目（前半）' },
-      { value: '2-front', label: '2組目（前半）' },
-      { value: '1-back', label: '1組目（後半）' },
-      { value: '2-back', label: '2組目（後半）' }
+      { value: '1-front-A', label: '前半1組目Aチーム' },
+      { value: '1-front-B', label: '前半1組目Bチーム' },
+      { value: '2-front-A', label: '前半2組目Aチーム' },
+      { value: '2-front-B', label: '前半2組目Bチーム' },
+      { value: '1-back-A', label: '後半1組目Aチーム' },
+      { value: '1-back-B', label: '後半1組目Bチーム' },
+      { value: '2-back-A', label: '後半2組目Aチーム' },
+      { value: '2-back-B', label: '後半2組目Bチーム' }
     ];
     const PARS = [4, 4, 3, 4, 3, 5, 4, 3, 5, 5, 4, 3, 4, 4, 3, 5, 4, 5];
     const HOLE_ORDER = Array.from({ length: 9 }, (_, index) => 10 + index).concat(Array.from({ length: 9 }, (_, index) => 1 + index));
@@ -987,7 +995,8 @@
           if (team === 'A') mission.completedA = event.target.checked;
           if (team === 'B') mission.completedB = event.target.checked;
         }
-        requestDatasetSave(MISSION_API_URL, missionState, value => { missionState = normalizeMissionState(value); });
+        render();
+        requestDatasetSave(MISSION_API_URL, missionState, value => { missionState = normalizeMissionState(value); render(); });
       });
       elements.memberSelect.addEventListener('change', async () => {
         const previousMember = selectedMember;
@@ -1007,28 +1016,28 @@
     }
 
     function buildMissionForm() {
-      elements.missionList.innerHTML = MISSION_GROUPS.map(group => `
-        <section class="points-section">
-          <h2>${group.label}</h2>
-          <div class="mission-table">
-            <div class="mission-grid-header">
-              <span>ミッション</span>
-              <span>A</span>
-              <span>B</span>
+      elements.missionList.innerHTML = MISSION_GROUPS.map(group => {
+        const team = group.value.endsWith('-A') ? 'A' : 'B';
+        return `
+          <section class="points-section">
+            <h2>${group.label}</h2>
+            <div class="mission-table">
+              ${Array.from({ length: 6 }, (_, index) => `
+                <div class="mission-row">
+                  <select data-mission-group="${group.value}" data-mission-index="${index}" data-mission-select>
+                    <option value="">＜ミッション選択＞</option>
+                    ${MISSION_LABELS.map((label, missionIndex) => `<option value="${missionIndex + 1}">${missionIndex + 1}. ${label}</option>`).join('')}
+                  </select>
+                  <label class="mission-completion">
+                    <input type="checkbox" data-mission-group="${group.value}" data-mission-index="${index}" data-mission-team="${team}" data-mission-completed>
+                    <span>達成</span>
+                  </label>
+                </div>
+              `).join('')}
             </div>
-            ${Array.from({ length: 6 }, (_, index) => `
-              <div class="mission-row">
-                <select data-mission-group="${group.value}" data-mission-index="${index}" data-mission-select>
-                  <option value="">ミッションを選択</option>
-                  ${MISSION_LABELS.map((label, missionIndex) => `<option value="${missionIndex + 1}">${missionIndex + 1}. ${label}</option>`).join('')}
-                </select>
-                <label><input type="checkbox" data-mission-group="${group.value}" data-mission-index="${index}" data-mission-team="A" data-mission-completed></label>
-                <label><input type="checkbox" data-mission-group="${group.value}" data-mission-index="${index}" data-mission-team="B" data-mission-completed></label>
-              </div>
-            `).join('')}
-          </div>
-        </section>
-      `).join('');
+          </section>
+        `;
+      }).join('');
     }
 
     function renderMissionForm() {
@@ -1212,8 +1221,8 @@
           <td>${row.score.olympic}</td>
           <td>${row.score.nearPin}</td>
           <td>${formatScoreDifference(row.score.score)}</td>
-          <td>${formatGrossRank(row.score.grossRank)}</td>
-          <td>${row.score.net}</td>
+          <td>${formatRankPoints(row.score.gross, row.score.grossRank)}</td>
+          <td>${formatRankPoints(row.score.net, row.member.netRank)}</td>
         </tr>
       `).join('');
 
@@ -1338,6 +1347,11 @@
 
     function formatGrossRank(rank) {
       return rank ? rankToLabel(rank) : '';
+    }
+
+    function formatRankPoints(points, rank) {
+      const rankLabel = rank ? rankToLabel(rank) : '';
+      return rankLabel ? `${points}(${rankLabel})` : String(points);
     }
 
     function formatScoreDifference(score) {

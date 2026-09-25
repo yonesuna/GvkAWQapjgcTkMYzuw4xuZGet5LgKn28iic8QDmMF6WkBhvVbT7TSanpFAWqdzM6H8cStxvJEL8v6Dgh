@@ -62,7 +62,7 @@
     .field input, .field select {
       border: 1px solid var(--line);
       border-radius: 8px;
-      padding: 10px 12px;
+      padding: 10px 6px;
       background: rgba(247, 251, 244, 0.94);
       color: var(--ink);
       min-width: 0;
@@ -1521,7 +1521,11 @@
           body: JSON.stringify({ ...state, changedMember: memberName, changedHole: holeIndex })
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const localHole = Number.isInteger(holeIndex)
+          ? { ...state.members[memberName].holes[holeIndex] }
+          : null;
         state = normalizeState(await response.json());
+        if (localHole) state.members[memberName].holes[holeIndex] = localHole;
         render();
       } catch (error) {
         console.error(`保存に失敗しました: ${error.message}`);

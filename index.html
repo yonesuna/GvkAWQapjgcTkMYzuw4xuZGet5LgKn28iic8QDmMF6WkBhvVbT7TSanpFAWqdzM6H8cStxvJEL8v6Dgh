@@ -537,6 +537,24 @@
       margin-top: 18px;
     }
 
+    .peoria-holes {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .peoria-holes label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .peoria-holes input { margin: 0; }
+
     .mission-list { display: grid; gap: 10px; }
 
     .mission-table {
@@ -626,6 +644,7 @@
       .panel { padding: 12px; }
       .points-grid { grid-template-columns: 1fr; }
       .rules-grid { grid-template-columns: 1fr; }
+      .peoria-holes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
 
     @media (max-width: 600px) {
@@ -807,6 +826,12 @@
         </div>
       </section>
       <section class="admin-section">
+        <h2 class="admin-section-title">シングルペリア</h2>
+        <p class="table-note">隠しホールを6つ選択してください。18ホール完了後にネット順位を計算します。</p>
+        <div class="peoria-holes" id="peoriaHoles"></div>
+        <div class="status" id="peoriaStatus" role="status"></div>
+      </section>
+      <section class="admin-section">
         <h2 class="admin-section-title">メンテナンス</h2>
         <div class="status" id="adminStatus"></div>
         <div class="admin-actions">
@@ -876,9 +901,11 @@
     const TEAM_LABELS = { A: 'Aチーム', B: 'Bチーム' };
     const API_URL = 'https://n6223mtla2.execute-api.ap-northeast-1.amazonaws.com/points';
     const MISSION_API_URL = `${API_URL}?data=mission`;
+    const PEORIA_API_URL = `${API_URL}?data=peoria`;
     const SELECTED_MEMBER_STORAGE_KEY = 'golfSelectedMember';
     let state = createInitialState();
     let missionState = createInitialMissionState();
+    let peoriaState = { version: 1, updatedAt: null, hiddenHoles: [] };
     let selectedMember = getSavedSelectedMember();
     let saveQueue = Promise.resolve();
     let completionError = '';
@@ -888,6 +915,8 @@
     const elements = {
       rankingStatus: document.getElementById('rankingStatus'),
       adminStatus: document.getElementById('adminStatus'),
+      peoriaHoles: document.getElementById('peoriaHoles'),
+      peoriaStatus: document.getElementById('peoriaStatus'),
       teamTotals: document.getElementById('teamTotals'),
       rankingBody: document.getElementById('rankingBody'),
       memberSelect: document.getElementById('memberSelect'),
@@ -910,6 +939,7 @@
     buildMemberSelect();
     buildHoles();
     buildMissionForm();
+    buildPeoriaHoles();
     buildPointsTable();
     bindEvents();
     loadPoints();
@@ -976,6 +1006,38 @@
         });
       });
       return next;
+    }
+
+    function normalizePeoriaState(input) {
+      const holes = input?.hiddenHoles;
+      return {
+        version: 1,
+        updatedAt: input?.updatedAt || null,
+        hiddenHoles: Array.isArray(holes) ? [...new Set(holes.filter(hole => Number.isInteger(hole) && hole >= 1 && hole <= 18))].slice(0, 6).sort((a, b) => a - b) : []
+      };
+    }
+
+    function buildPeoriaHoles() {
+      elements.peoriaHoles.innerHTML = Array.from({ length: 18 }, (_, index) => `
+        <label><input type="checkbox" data-peoria-hole="${index + 1}"><span>${index + 1}H</span></label>
+      `).join('');
+      elements.peoriaHoles.addEventListener('change', event => {
+        const holeNumber = Number(event.target.dataset.peoriaHole);
+        if (!holeNumber) return;
+        if (event.target.checked && peoriaState.hiddenHoles.length >= 6) {
+          event.target.checked = false;
+          setStatus(elements.peoriaStatus, '隠しホールは6つまで選択できます。', true);
+          return;
+        }
+        peoriaState.hiddenHoles = event.target.checked
+          ? [...peoriaState.hiddenHoles, holeNumber].sort((a, b) => a - b)
+          : peoriaState.hiddenHoles.filter(hole => hole !== holeNumber);
+        const savedHoles = [...peoriaState.hiddenHoles];
+        render();
+        requestDatasetSave(PEORIA_API_URL, { ...peoriaState, hiddenHoles: savedHoles }, value => {
+          if (savedHoles.join(',') === peoriaState.hiddenHoles.join(',')) peoriaState = normalizePeoriaState(value);
+        });
+      });
     }
 
     function bindEvents() {
@@ -1166,8 +1228,18 @@
     function render() {
       renderEntryForm();
       renderMissionForm();
+      renderPeoriaHoles();
       renderRanking();
       renderValidation();
+    }
+
+    function renderPeoriaHoles() {
+      elements.peoriaHoles.querySelectorAll('[data-peoria-hole]').forEach(input => {
+        input.checked = peoriaState.hiddenHoles.includes(Number(input.dataset.peoriaHole));
+      });
+      if (!elements.peoriaStatus.classList.contains('error')) {
+        setStatus(elements.peoriaStatus, `${peoriaState.hiddenHoles.length} / 6 ホール選択済み`);
+      }
     }
 
     function renderEntryForm() {
@@ -1220,7 +1292,7 @@
           <td>${row.score.nearPin}</td>
           <td>${formatScoreDifference(row.score.score)}</td>
           <td>${formatRankPoints(row.score.gross, row.score.grossRank)}</td>
-          <td>${formatRankPoints(row.score.net, row.member.netRank)}</td>
+          <td>${row.score.netRank ? formatRankPoints(row.score.net, row.score.netRank) : ''}</td>
         </tr>
       `).join('');
 
@@ -1278,22 +1350,7 @@
     }
 
     function validateRanks() {
-      const errors = [];
-      for (const field of ['netRank']) {
-        const label = field === 'grossRank' ? 'グロス順位' : 'ネット順位';
-        const counts = new Map();
-        MEMBERS.forEach(member => {
-          const name = member.name;
-          const rank = state.members[name][field];
-          if (rank <= 3) {
-            counts.set(rank, [...(counts.get(rank) || []), name]);
-          }
-        });
-        counts.forEach((names, rank) => {
-          if (names.length > 1) errors.push(`${label} ${rankToLabel(rank)}が重複しています: ${names.join('、')}`);
-        });
-      }
-      return errors;
+      return [];
     }
 
     function validateCompletionOrder() {
@@ -1327,8 +1384,9 @@
       const score = calculateScoreDifference(memberName);
       const grossRank = getGrossRanks().get(memberName);
       const gross = grossRankToPoints(grossRank);
-      const net = netRankToPoints(member.netRank);
-      return { olympic, nearPin, score, grossRank, gross, net, total: olympic + nearPin + gross + net };
+      const netRank = getNetRanks().get(memberName);
+      const net = netRankToPoints(netRank);
+      return { olympic, nearPin, score, grossRank, gross, netRank, net, total: olympic + nearPin + gross + net };
     }
 
     function calculateScoreDifference(memberName) {
@@ -1340,6 +1398,22 @@
         .filter(memberName => state.members[memberName].holes.some(hole => hole.completed))
         .map(memberName => ({ memberName, score: calculateScoreDifference(memberName) }))
         .sort((left, right) => left.score - right.score)
+        .map((entry, index) => [entry.memberName, index < 3 ? index + 1 : 4]));
+    }
+
+    function getNetRanks() {
+      if (peoriaState.hiddenHoles.length !== 6) return new Map();
+      return new Map(GROSS_TIE_ORDER
+        .filter(memberName => state.members[memberName].holes.every(hole => hole.completed && hole.score !== ''))
+        .map(memberName => {
+          const holes = state.members[memberName].holes;
+          const gross = holes.reduce((sum, hole) => sum + Number(hole.score), 0);
+          const hiddenTotal = peoriaState.hiddenHoles.reduce((sum, holeNumber) =>
+            sum + Number(holes[holeNumber - 1].score), 0);
+          const handicap = Math.max(0, (hiddenTotal * 3 - PARS.reduce((sum, par) => sum + par, 0)) * 0.8);
+          return { memberName, net: Math.round((gross - handicap) * 10) };
+        })
+        .sort((left, right) => left.net - right.net)
         .map((entry, index) => [entry.memberName, index < 3 ? index + 1 : 4]));
     }
 
@@ -1442,7 +1516,7 @@
       try {
         state = normalizeState(await fetch(API_URL, { method: 'GET' }).then(response => readApiResponse(response, 'スコア')));
         loadedDatasets.add('olympic');
-        await loadDataset('mission');
+        await Promise.all([loadDataset('mission'), loadDataset('peoria')]);
         render();
         setStatus(elements.rankingStatus, '読み込みました。');
       } catch (error) {
@@ -1460,14 +1534,15 @@
 
     async function loadDataset(dataset) {
       if (loadedDatasets.has(dataset)) return;
-      const url = MISSION_API_URL;
+      const url = dataset === 'peoria' ? PEORIA_API_URL : MISSION_API_URL;
       try {
-        const data = await fetch(url, { method: 'GET' }).then(response => readApiResponse(response, 'ミッション'));
-        missionState = normalizeMissionState(data);
+        const data = await fetch(url, { method: 'GET' }).then(response => readApiResponse(response, dataset === 'peoria' ? 'シングルペリア' : 'ミッション'));
+        if (dataset === 'peoria') peoriaState = normalizePeoriaState(data);
+        else missionState = normalizeMissionState(data);
         loadedDatasets.add(dataset);
         render();
       } catch (error) {
-        setStatus(elements.rankingStatus, `ミッションの読み込みに失敗しました: ${error.message}`, true);
+        setStatus(dataset === 'peoria' ? elements.peoriaStatus : elements.rankingStatus, `${dataset === 'peoria' ? 'シングルペリア' : 'ミッション'}の読み込みに失敗しました: ${error.message}`, true);
       }
     }
 
@@ -1487,6 +1562,7 @@
         localStorage.clear();
         state = createInitialState();
         missionState = createInitialMissionState();
+        peoriaState = normalizePeoriaState(null);
         loadedDatasets.clear();
         loadedDatasets.add('olympic');
         selectedMember = MEMBERS[0].name;
@@ -1552,9 +1628,11 @@
         try {
           const saved = await saveDataset(url, dataset);
           applyResponse(saved);
+          if (url === PEORIA_API_URL) setStatus(elements.peoriaStatus, `${peoriaState.hiddenHoles.length} / 6 ホール選択済み`);
           render();
         } catch (error) {
           console.error(`保存に失敗しました: ${error.message}`);
+          if (url === PEORIA_API_URL) setStatus(elements.peoriaStatus, `隠しホールの保存に失敗しました: ${error.message}`, true);
         }
       });
     }

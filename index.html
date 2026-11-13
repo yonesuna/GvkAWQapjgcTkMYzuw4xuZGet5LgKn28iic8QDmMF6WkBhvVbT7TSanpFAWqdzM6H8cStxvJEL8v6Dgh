@@ -1452,6 +1452,7 @@
 
     function formatRankPoints(points, rank) {
       const rankLabel = rank ? rankToLabel(rank) : '';
+      if (rankLabel === '圏外') return '';
       return rankLabel ? `${points}(${rankLabel})` : String(points);
     }
 

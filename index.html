@@ -172,7 +172,7 @@
       gap: 3px;
       margin-top: 8px;
       color: var(--muted);
-      font-size: 14px;
+      font-size: 16px;
       line-height: 1.4;
     }
 
@@ -828,6 +828,9 @@
       <section class="admin-section">
         <h2 class="admin-section-title">シングルペリア</h2>
         <p class="table-note">隠しホールを6つ選択してください。18ホール完了後にネット順位を計算します。</p>
+        <div class="admin-actions">
+          <button class="button secondary" id="randomPeoriaButton" type="button">ランダム設定</button>
+        </div>
         <div class="peoria-holes" id="peoriaHoles"></div>
         <div class="status" id="peoriaStatus" role="status"></div>
       </section>
@@ -916,6 +919,7 @@
       rankingStatus: document.getElementById('rankingStatus'),
       adminStatus: document.getElementById('adminStatus'),
       peoriaHoles: document.getElementById('peoriaHoles'),
+      randomPeoriaButton: document.getElementById('randomPeoriaButton'),
       peoriaStatus: document.getElementById('peoriaStatus'),
       teamTotals: document.getElementById('teamTotals'),
       rankingBody: document.getElementById('rankingBody'),
@@ -1021,6 +1025,7 @@
       elements.peoriaHoles.innerHTML = Array.from({ length: 18 }, (_, index) => `
         <label><input type="checkbox" data-peoria-hole="${index + 1}"><span>${index + 1}H</span></label>
       `).join('');
+      elements.randomPeoriaButton.addEventListener('click', setRandomPeoriaHoles);
       elements.peoriaHoles.addEventListener('change', event => {
         const holeNumber = Number(event.target.dataset.peoriaHole);
         if (!holeNumber) return;
@@ -1037,6 +1042,30 @@
         requestDatasetSave(PEORIA_API_URL, { ...peoriaState, hiddenHoles: savedHoles }, value => {
           if (savedHoles.join(',') === peoriaState.hiddenHoles.join(',')) peoriaState = normalizePeoriaState(value);
         });
+      });
+    }
+
+    function setRandomPeoriaHoles() {
+      const candidates = [];
+      function collectCandidates(startIndex, holes, totalPar) {
+        if (holes.length === 6) {
+          if (totalPar === 24) candidates.push(holes);
+          return;
+        }
+        for (let index = startIndex; index <= PARS.length - (6 - holes.length); index += 1) {
+          collectCandidates(index + 1, [...holes, index + 1], totalPar + PARS[index]);
+        }
+      }
+      collectCandidates(0, [], 0);
+      if (!candidates.length) {
+        setStatus(elements.peoriaStatus, 'パー合計24になる組み合わせがありません。', true);
+        return;
+      }
+      peoriaState.hiddenHoles = candidates[Math.floor(Math.random() * candidates.length)];
+      const savedHoles = [...peoriaState.hiddenHoles];
+      render();
+      requestDatasetSave(PEORIA_API_URL, { ...peoriaState, hiddenHoles: savedHoles }, value => {
+        if (savedHoles.join(',') === peoriaState.hiddenHoles.join(',')) peoriaState = normalizePeoriaState(value);
       });
     }
 
